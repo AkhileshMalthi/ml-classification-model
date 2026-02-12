@@ -3,6 +3,7 @@ Script to execute multiple MLflow experiments with different hyperparameters.
 This demonstrates experiment tracking and comparison capabilities.
 """
 
+import os
 import mlflow
 from src.model_trainer import train_model
 
@@ -11,7 +12,8 @@ def run_multiple_experiments():
     Execute multiple training runs with different hyperparameters to demonstrate
     MLflow experiment tracking and comparison.
     """
-    mlflow.set_tracking_uri("http://localhost:5000")
+    mlflow_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+    mlflow.set_tracking_uri(mlflow_uri)
     
     # Experiment configurations
     experiments = [

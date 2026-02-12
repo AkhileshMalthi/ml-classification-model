@@ -2,13 +2,14 @@
 Script to compare experiment runs and promote the best model to Production stage.
 """
 
+import os
 import mlflow
-from mlflow.tracking import MlflowClient
+from mlflow import MlflowClient
 
 def promote_best_model(
     model_name="ClassificationModel",
     metric_name="f1_score",
-    mlflow_tracking_uri="http://localhost:5000"
+    mlflow_tracking_uri=None
 ):
     """
     Compare all model versions and promote the best one to Production stage.
@@ -18,6 +19,8 @@ def promote_best_model(
         metric_name: Metric to use for comparison (f1_score, accuracy, etc.)
         mlflow_tracking_uri: MLflow tracking server URI
     """
+    if mlflow_tracking_uri is None:
+        mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
     mlflow.set_tracking_uri(mlflow_tracking_uri)
     client = MlflowClient()
     
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--mlflow-uri",
-        default="http://localhost:5000",
+        default=os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000"),
         help="MLflow tracking URI (default: http://localhost:5000)"
     )
     

@@ -11,12 +11,13 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import mlflow
 import mlflow.pyfunc
+import mlflow.sklearn
 import joblib
 import os
 import pandas as pd
 from contextlib import asynccontextmanager
 
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://host.docker.internal:5000")
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_server:5000")
 REGISTERED_MODEL_NAME = os.getenv("REGISTERED_MODEL_NAME", "ClassificationModel")
 MODEL_STAGE = os.getenv("MODEL_STAGE", "Production")
 
@@ -31,8 +32,19 @@ async def lifespan(app: FastAPI):
     global model, scaler
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     model_uri = f"models:/{REGISTERED_MODEL_NAME}/{MODEL_STAGE}"
-    model = mlflow.pyfunc.load_model(model_uri)
-    scaler_path = mlflow.artifacts.download_artifacts(model_uri, artifact_path="preprocessing_artifacts/scaler.pkl")
+    
+    # Load the sklearn model directly instead of via pyfunc wrapper
+    model = mlflow.sklearn.load_model(model_uri)
+    
+    # Get the run ID from the model registry to download artifacts
+    client = mlflow.MlflowClient()
+    model_version = client.get_latest_versions(REGISTERED_MODEL_NAME, stages=[MODEL_STAGE])[0]
+    run_id = model_version.run_id
+    
+    scaler_path = mlflow.artifacts.download_artifacts(
+        run_id=run_id,
+        artifact_path="preprocessing_artifacts/scaler.pkl"
+    )
     scaler = joblib.load(scaler_path)
     yield
 
@@ -51,6 +63,7 @@ def predict(payload: Features):
         X_scaled = scaler.transform(X)
         preds = model.predict(X_scaled)
         probs = model.predict_proba(X_scaled)
+        
         return {
             "prediction": preds.tolist(),
             "probabilities": probs.tolist()

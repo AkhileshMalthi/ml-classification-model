@@ -2,13 +2,13 @@
 version: '3.8'
 services:
   mlflow_server:
-    image: mlflow/mlflow:latest
+    image: ghcr.io/mlflow/mlflow:latest
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
       - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
-    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts --serve-artifacts --allowed-hosts "*"
     volumes:
       - ./mlflow:/mlflow
     healthcheck:
@@ -27,8 +27,11 @@ services:
       - "8000:8000"
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow_server:5000
+      - MLFLOW_ARTIFACT_URI=http://mlflow_server:5000
       - REGISTERED_MODEL_NAME=ClassificationModel
       - MODEL_STAGE=Production
+    volumes:
+      - ./mlflow:/mlflow
     depends_on:
       mlflow_server:
         condition: service_healthy
