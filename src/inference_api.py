@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     model_uri = f"models:/{REGISTERED_MODEL_NAME}/{MODEL_STAGE}"
     model = mlflow.pyfunc.load_model(model_uri)
-    scaler_path = mlflow.artifacts.download_artifacts(model_uri, artifact_path="scaler.pkl")
+    scaler_path = mlflow.artifacts.download_artifacts(model_uri, artifact_path="preprocessing_artifacts/scaler.pkl")
     scaler = joblib.load(scaler_path)
     yield
 
@@ -50,7 +50,11 @@ def predict(payload: Features):
         X = pd.DataFrame([payload.features])
         X_scaled = scaler.transform(X)
         preds = model.predict(X_scaled)
-        return {"prediction": preds.tolist()}
+        probs = model.predict_proba(X_scaled)
+        return {
+            "prediction": preds.tolist(),
+            "probabilities": probs.tolist()
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
