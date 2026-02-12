@@ -172,10 +172,31 @@ pytest tests/
 
 ## MLflow UI Screenshots
 
-> Add screenshots here showing:
-> - Experiment runs
-> - Registered models
-> - Metrics and artifacts (confusion matrix, scaler, etc.)
+After running the experiments, capture screenshots from the MLflow UI at `http://localhost:5000` to document:
+
+### 1. Experiment Runs
+Navigate to the experiment (e.g., "iris_classification") and capture:
+- List of all runs with their metrics (accuracy, F1-score, etc.)
+- Run comparison view showing parameter variations
+- Metrics charts comparing different hyperparameters
+
+### 2. Registered Models
+Navigate to "Models" section and capture:
+- List of registered models with versions
+- Model version details showing:
+  - Description and tags
+  - Stage (None/Staging/Production/Archived)
+  - Creation timestamp and creator
+
+### 3. Artifacts and Visualizations
+Open a specific run and capture:
+- Confusion matrix image artifact
+- Classification report text artifact
+- Logged parameters section
+- Logged metrics section
+- Model schema (input/output)
+
+**To add screenshots:** Replace this section with actual images after running your first experiments.
 
 ---
 
