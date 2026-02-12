@@ -10,7 +10,7 @@ services:
       - MLFLOW_TRACKING_URI=http://0.0.0.0:5000
     command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts --serve-artifacts --allowed-hosts "*"
     volumes:
-      - ./mlflow:/mlflow
+      - ./_mlflow_data:/mlflow
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 10s
@@ -31,7 +31,7 @@ services:
       - REGISTERED_MODEL_NAME=ClassificationModel
       - MODEL_STAGE=Production
     volumes:
-      - ./mlflow:/mlflow
+      - ./_mlflow_data:/mlflow
     depends_on:
       mlflow_server:
         condition: service_healthy
