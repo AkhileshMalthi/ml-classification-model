@@ -48,17 +48,35 @@ cd ml-classification-model
     pip install -r requirements.txt
     ```
 
-2. **Train a model and log to MLflow:**
+2. **Start MLflow tracking server** (if not using Docker):
+
+    ```sh
+    mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root ./mlruns
+    ```
+
+3. **Run multiple experiments** (recommended - executes 4 different hyperparameter configurations):
+
+    ```sh
+    python run_experiments.py
+    ```
+
+    This will train models with different hyperparameters and log all results to MLflow.
+
+4. **Or train a single model:**
 
     ```sh
     python src/model_trainer.py
     ```
 
-    You can specify dataset and hyperparameters:
+5. **Promote the best model to Production:**
+
+    After running experiments, promote the best-performing model:
 
     ```sh
-    python src/model_trainer.py --dataset_name wine --C 0.5 --penalty l1
+    python promote_model.py
     ```
+
+    This will compare all model versions based on F1-score and promote the best one to Production stage.
 
 ---
 
@@ -69,6 +87,12 @@ After starting the MLflow server (see Docker instructions below), open:
 ```
 http://localhost:5000
 ```
+
+You can view:
+- Experiment runs and metrics
+- Logged artifacts (confusion matrix, classification report, scaler)
+- Registered models with descriptions and tags
+- Model versions and stages (None, Staging, Production, Archived)
 
 ---
 
@@ -109,10 +133,13 @@ curl -X POST "http://localhost:8000/predict" \
 
 **Response:**
 ```json
-{"prediction": [0]}
+{
+  "prediction": [0],
+  "probabilities": [[0.9127, 0.0583, 0.0290]]
+}
 ```
 
-> Adjust the `features` array to match your model's expected input.
+> Adjust the `features` array to match your model's expected input (4 features for iris dataset).
 
 ### Python Example
 
@@ -122,7 +149,9 @@ response = requests.post(
     "http://localhost:8000/predict",
     json={"features": [5.1, 3.5, 1.4, 0.2]}
 )
-print(response.json())
+result = response.json()
+print(f"Predicted class: {result['prediction'][0]}")
+print(f"Probabilities: {result['probabilities'][0]}")
 ```
 
 ---
@@ -163,7 +192,8 @@ POST /predict
 **Response:**
 ```json
 {
-  "prediction": [0]
+  "prediction": [0],
+  "probabilities": [[0.9127, 0.0583, 0.0290]]
 }
 ```
 
@@ -172,13 +202,20 @@ POST /predict
 ## Design Choices
 
 - **MLflow** for experiment tracking, model registry, and artifact storage.
+  - Logs parameters, metrics (accuracy, precision, recall, F1-score)
+  - Logs artifacts (confusion matrix, classification report, scaler)
+  - Model descriptions and tags for better organization
+  - Model versioning with stage promotion (None → Production)
 - **FastAPI** for high-performance, async REST API serving predictions.
+  - Returns both class labels and probability distributions
+  - Proper error handling with HTTP status codes
+  - Lifespan event to load model and scaler only once at startup
 - **Docker Compose** for reproducible, multi-service deployment.
 - **Scikit-learn** for model training and preprocessing.
-- **Joblib** for serializing the scaler as an MLflow artifact.
-- **Unit tests** with pytest and FastAPI’s TestClient for API reliability.
-- **Environment variables** for flexible configuration (MLflow URI, model name, etc.).
-- **Lifespan event** in FastAPI to load model and scaler only once at startup.
+- **Automated experiment runs** via `run_experiments.py` with multiple hyperparameter configurations.
+- **Model promotion script** (`promote_model.py`) to automatically select and promote best model.
+- **Comprehensive unit tests** with pytest, mocked dependencies, and FastAPI's TestClient.
+- **Environment variables** for flexible configuration (MLflow URI, model name, stage).
 
 ---
 
