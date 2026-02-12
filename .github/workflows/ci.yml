@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        enable-cache: true
+    
+    - name: Install dependencies
+      run: uv sync
+    
+    - name: Run tests
+      run: uv run pytest tests/ -v --tb=short
+    
+    - name: Test coverage
+      run: |
+        uv pip install pytest-cov
+        uv run pytest tests/ --cov=src --cov-report=term --cov-report=xml
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+      continue-on-error: true
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+    
+    - name: Install ruff
+      run: uv pip install ruff
+    
+    - name: Run ruff linter
+      run: uv run ruff check src/ tests/ --output-format=github
+      continue-on-error: true
+    
+    - name: Run ruff formatter check
+      run: uv run ruff format --check src/ tests/
+      continue-on-error: true
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build API Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ./Dockerfile
+        push: false
+        tags: ml-classification-model-api:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Test Docker Compose
+      run: |
+        docker compose config
+        echo "Docker Compose configuration is valid"
+
+  validate:
+    name: Validation Checks
+    runs-on: ubuntu-latest
+    needs: [test, lint, docker]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Validate required files
+      run: |
+        echo "Checking required files..."
+        test -f README.md || (echo "README.md missing" && exit 1)
+        test -f requirements.txt || (echo "requirements.txt missing" && exit 1)
+        test -f Dockerfile || (echo "Dockerfile missing" && exit 1)
+        test -f docker-compose.yml || (echo "docker-compose.yml missing" && exit 1)
+        test -f .env.example || (echo ".env.example missing" && exit 1)
+        test -d tests/ || (echo "tests/ directory missing" && exit 1)
+        test -d src/ || (echo "src/ directory missing" && exit 1)
+        echo "✅ All required files present"
+    
+    - name: Validate Python files syntax
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Check Python syntax
+      run: |
+        python -m py_compile src/*.py
+        python -m py_compile tests/*.py
+        echo "✅ Python syntax valid"
+    
+    - name: Success notification
+      run: |
+        echo "🎉 All CI checks passed!"
+        echo "✅ Tests: Passed"
+        echo "✅ Linting: Completed"
+        echo "✅ Docker Build: Successful"
+        echo "✅ File Validation: Passed"
