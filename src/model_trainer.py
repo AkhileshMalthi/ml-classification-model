@@ -12,7 +12,7 @@
 import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
 import matplotlib.pyplot as plt
 import joblib
 import os
@@ -60,6 +60,14 @@ def train_model(dataset_name='iris', C=1.0, penalty='l2', random_state=42):
         mlflow.log_artifact(cm_path)
         os.remove(cm_path)
 
+        # Classification report
+        report = classification_report(y_test, y_pred)
+        report_path = "classification_report.txt"
+        with open(report_path, "w") as f:
+            f.write(report)
+        mlflow.log_artifact(report_path)
+        os.remove(report_path)
+
         # Save and log scaler
         scaler_path = "scaler.pkl"
         joblib.dump(scaler, scaler_path)
@@ -67,10 +75,37 @@ def train_model(dataset_name='iris', C=1.0, penalty='l2', random_state=42):
         os.remove(scaler_path)
 
         # Log and register model
-        mlflow.sklearn.log_model(
+        model_info = mlflow.sklearn.log_model(
             sk_model=model,
             artifact_path="model",
             registered_model_name="ClassificationModel"
+        )
+        
+        # Add model description and tags
+        client = mlflow.tracking.MlflowClient()
+        model_version = model_info.registered_model_version
+        client.update_model_version(
+            name="ClassificationModel",
+            version=model_version,
+            description=f"Logistic Regression classifier trained on {dataset_name} dataset with C={C}, penalty={penalty}. F1-score: {f1:.4f}"
+        )
+        client.set_model_version_tag(
+            name="ClassificationModel",
+            version=model_version,
+            key="dataset",
+            value=dataset_name
+        )
+        client.set_model_version_tag(
+            name="ClassificationModel",
+            version=model_version,
+            key="algorithm",
+            value="LogisticRegression"
+        )
+        client.set_model_version_tag(
+            name="ClassificationModel",
+            version=model_version,
+            key="f1_score",
+            value=f"{f1:.4f}"
         )
 
 if __name__ == "__main__":
