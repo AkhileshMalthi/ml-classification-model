@@ -175,31 +175,51 @@ pytest tests/
 
 ## MLflow UI Screenshots
 
-After running the experiments, capture screenshots from the MLflow UI at `http://localhost:5000` to document:
+After running the experiments, you can view comprehensive results in the MLflow UI at `http://localhost:5000`. Below are examples of key screens to document:
 
 ### 1. Experiment Runs
-Navigate to the experiment (e.g., "iris_classification") and capture:
-- List of all runs with their metrics (accuracy, F1-score, etc.)
-- Run comparison view showing parameter variations
-- Metrics charts comparing different hyperparameters
+
+![MLflow Experiments](assets/screenshots/mlflow-experiments.png)
+
+The experiment view shows all training runs with their key metrics. You can:
+- Compare different hyperparameter configurations (C values, penalty types)
+- Sort runs by metrics (F1-score, accuracy, precision, recall)
+- View detailed run information including parameters, metrics, and artifacts
 
 ### 2. Registered Models
-Navigate to "Models" section and capture:
-- List of registered models with versions
-- Model version details showing:
-  - Description and tags
-  - Stage (None/Staging/Production/Archived)
-  - Creation timestamp and creator
 
-### 3. Artifacts and Visualizations
-Open a specific run and capture:
-- Confusion matrix image artifact
-- Classification report text artifact
-- Logged parameters section
-- Logged metrics section
-- Model schema (input/output)
+![MLflow Model Registry](assets/screenshots/mlflow-model-registry.png)
 
-**To add screenshots:** Replace this section with actual images after running your first experiments.
+The Model Registry displays:
+- All registered model versions
+- Model stage lifecycle (None → Staging → Production → Archived)
+- Model descriptions and tags (dataset, algorithm, f1_score)
+- Version history and metadata
+
+### 3. Run Details and Artifacts
+
+![MLflow Run Artifacts](assets/screenshots/mlflow-run-artifacts.png)
+
+Each run captures comprehensive artifacts:
+- **Confusion Matrix**: Visual representation of model predictions vs actual labels
+- **Classification Report**: Detailed precision, recall, and F1-scores per class
+- **Preprocessing Artifacts**: Saved scaler for production inference
+- **Model Artifacts**: MLmodel file with signature and dependencies
+
+### 4. Metrics Comparison
+
+![MLflow Metrics Comparison](assets/screenshots/mlflow-metrics-comparision.png)
+
+Compare multiple runs side-by-side:
+- Parameter variations (C=0.1 vs C=1.0 vs C=10.0, L1 vs L2)
+- Performance metrics across all experiments
+- Best model selection based on F1-score
+
+> **Note**: These screenshots were captured from the MLflow UI after running the complete experiment workflow. To reproduce and view the results yourself, run:
+> 1. `docker-compose up --build` to start services
+> 2. `docker-compose exec model_api python run_experiments.py` to run all 4 experiments
+> 3. Access http://localhost:5000 in your browser to explore the MLflow UI
+> 4. `docker-compose exec model_api python promote_model.py` to promote the best model to Production
 
 ---
 

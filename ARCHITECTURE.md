@@ -1,72 +1,23 @@
-# System Architecture
+ # System Architecture
 
 This document provides a high-level overview of the ML Classification Model system architecture, detailing component interactions, data flow, and deployment structure.
 
 ## High-Level Architecture Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                         Development Environment                          │
-│                                                                          │
-│  ┌──────────────────┐      ┌──────────────────┐      ┌──────────────┐ │
-│  │ Data Processor   │      │ Model Trainer    │      │ Experiment   │ │
-│  │                  │      │                  │      │ Runner       │ │
-│  │ - Load Dataset   │─────>│ - Train Model    │<─────│              │ │
-│  │ - Preprocess     │      │ - Log Params     │      │ - Multiple   │ │
-│  │ - Split Data     │      │ - Log Metrics    │      │   Runs       │ │
-│  │ - Scale Features │      │ - Save Artifacts │      │ - Compare    │ │
-│  └──────────────────┘      └────────┬─────────┘      └──────────────┘ │
-│                                     │                                   │
-│                                     │ MLflow API                        │
-│                                     ▼                                   │
-│                          ┌──────────────────────┐                      │
-│                          │  MLflow Tracking     │                      │
-│                          │  Server              │                      │
-│                          │                      │                      │
-│                          │  - Experiments       │                      │
-│                          │  - Runs & Metrics    │                      │
-│                          │  - Artifacts Store   │                      │
-│                          │  - Model Registry    │                      │
-│                          └──────────┬───────────┘                      │
-│                                     │                                   │
-└─────────────────────────────────────┼───────────────────────────────────┘
-                                      │
-                                      │ Model Registry
-                                      │ API
-                                      ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        Production Environment                            │
-│                                                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                    Docker Compose Orchestration                   │  │
-│  │                                                                   │  │
-│  │  ┌─────────────────────────┐    ┌──────────────────────────┐   │  │
-│  │  │  MLflow Server          │    │  Model Serving API       │   │  │
-│  │  │  Container              │    │  Container               │   │  │
-│  │  │                         │    │                          │   │  │
-│  │  │  Port: 5000            │◄───┤  - Load Model from       │   │  │
-│  │  │                         │    │    Registry              │   │  │
-│  │  │  - Backend Store (DB)   │    │  - Load Scaler           │   │  │
-│  │  │  - Artifact Store       │    │  - FastAPI Server        │   │  │
-│  │  │  - Model Registry       │    │  - /health endpoint      │   │  │
-│  │  │                         │    │  - /predict endpoint     │   │  │
-│  │  └─────────────────────────┘    │                          │   │  │
-│  │                                  │  Port: 8000              │   │  │
-│  │                                  └──────────┬───────────────┘   │  │
-│  └─────────────────────────────────────────────┼───────────────────┘  │
-│                                                 │                       │
-└─────────────────────────────────────────────────┼───────────────────────┘
-                                                  │
-                                                  │ HTTP/JSON
-                                                  ▼
-                                          ┌───────────────┐
-                                          │  API Clients  │
-                                          │               │
-                                          │  - Web Apps   │
-                                          │  - Mobile     │
-                                          │  - Services   │
-                                          └───────────────┘
-```
+![High-Level Architecture](assets/high-level-architecture.png)
+
+The architecture consists of two main environments:
+
+**Development Environment:**
+- **Data Processor**: Loads and preprocesses datasets with feature scaling
+- **Model Trainer**: Trains models and logs to MLflow with all parameters and metrics
+- **Experiment Runner**: Orchestrates multiple training runs for comparison
+- **MLflow Tracking Server**: Centralized experiment tracking, artifact storage, and model registry
+
+**Production Environment (Docker Compose):**
+- **MLflow Server Container** (Port 5000): Serves the MLflow UI and API
+- **Model Serving API Container** (Port 8000): FastAPI service loading models from registry
+- **API Clients**: External consumers (web apps, mobile, services) accessing predictions via HTTP/JSON
 
 ## Component Descriptions
 
