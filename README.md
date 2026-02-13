@@ -10,20 +10,7 @@ A production-ready machine learning classification pipeline using scikit-learn, 
 
 ## Architecture
 
-```
-+-------------------+        +-------------------+        +-------------------+
-|   Data Processor  |        |   Model Trainer   |        |   Inference API   |
-| (Preprocessing)   | -----> | (MLflow Logging)  | -----> | (FastAPI + MLflow)|
-+-------------------+        +-------------------+        +-------------------+
-        |                           |                             |
-        |                           |                             |
-        +---------------------------+-----------------------------+
-                                    |
-                             +-------------------+
-                             |   MLflow Server   |
-                             | (Tracking & Artifacts)
-                             +-------------------+
-```
+![Architecture Diagram](assets/architecture.png)
 
 ---
 
