@@ -3,11 +3,12 @@
 # Error handling for invalid JSON payload and missing features.
 # Health check endpoint.
 
+import sys
+from unittest.mock import MagicMock, Mock
+
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import Mock, MagicMock
-import numpy as np
-import sys
 
 # Mock mlflow BEFORE any other imports try to use it
 mock_mlflow = MagicMock()
@@ -17,7 +18,7 @@ mock_joblib = MagicMock()
 
 sys.modules['mlflow'] = mock_mlflow
 sys.modules['mlflow.sklearn'] = mock_mlflow_sklearn
-sys.modules['mlflow.artifacts'] = mock_mlflow_artifacts  
+sys.modules['mlflow.artifacts'] = mock_mlflow_artifacts
 sys.modules['mlflow.pyfunc'] = MagicMock()
 sys.modules['joblib'] = mock_joblib
 
@@ -31,7 +32,7 @@ def mock_model():
 
 @pytest.fixture
 def mock_scaler():
-    """Mock StandardScale"""
+    """Mock StandardScaler"""
     scaler = Mock()
     scaler.transform = Mock(return_value=np.array([[5.1, 3.5, 1.4, 0.2]]))
     return scaler
@@ -53,7 +54,7 @@ def client(mock_model, mock_scaler, mock_mlflow_client):
     mock_mlflow.MlflowClient.return_value = mock_mlflow_client
     mock_mlflow_artifacts.download_artifacts.return_value = "dummy_scaler_path"
     mock_joblib.load.return_value = mock_scaler
-    
+
     # Now import the app with mocked dependencies
     from src.inference_api import app
     with TestClient(app) as test_client:

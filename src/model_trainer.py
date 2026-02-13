@@ -1,30 +1,75 @@
-# Implement a training script that:
-# Calls load_and_preprocess_data.
-# Initializes an MLflow run (with mlflow.start_run(run_name='<run_name>'):).
-# Initializes and trains a scikit-learn classification model.
-# Logs model parameters using mlflow.log_param().
-# Calculates and logs evaluation metrics (accuracy, precision, recall, f1-score) using mlflow.log_metric().
-# Logs the trained scikit-learn model using mlflow.sklearn.log_model(model, "model", registered_model_name="ClassificationModel").
-# Generates and logs a confusion matrix plot as an artifact.
-# Logs the fitted scaler object as an artifact (e.g., mlflow.log_artifact("scaler.pkl", "preprocessing_artifacts")).
-# Registers the best-performing model to the MLflow Model Registry.
+"""
+Model training module with MLflow experiment tracking.
 
+This module implements the complete ML training pipeline including:
+- Model initialization and training
+- MLflow parameter and metric logging
+- Artifact generation (confusion matrix, classification report, scaler)
+- Model registration to MLflow Model Registry
+"""
+
+import os
+
+import joblib
+import matplotlib.pyplot as plt
 import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
-import matplotlib.pyplot as plt
-import joblib
-import os
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
+
 from src.data_processor import load_and_preprocess_data
 
-def train_model(dataset_name='iris', C=1.0, penalty='l2', random_state=42):
+
+def train_model(dataset_name='iris', C=1.0, penalty='l2', random_state=42):  # noqa: N803
+    """
+    Train a classification model with MLflow experiment tracking.
+
+    This function performs the complete ML workflow:
+    1. Loads and preprocesses data
+    2. Trains a Logistic Regression model
+    3. Logs parameters, metrics, and artifacts to MLflow
+    4. Registers the model in MLflow Model Registry with tags and description
+
+    All artifacts are logged to MLflow including:
+    - Trained model (sklearn format)
+    - Confusion matrix visualization
+    - Classification report
+    - Fitted scaler for production inference
+
+    Args:
+        dataset_name (str): Name of the sklearn dataset ('iris', 'wine', 'breast_cancer').
+            Default is 'iris'.
+        C (float): Inverse regularization strength for Logistic Regression.
+            Smaller values specify stronger regularization. Default is 1.0.
+        penalty (str): Regularization type ('l1' or 'l2'). Default is 'l2'.
+        random_state (int): Random seed for reproducibility. Default is 42.
+
+    Returns:
+        None. All outputs are logged to MLflow tracking server.
+
+    Example:
+        >>> train_model(dataset_name='iris', C=1.0, penalty='l2')
+        # Trains model and logs to MLflow experiments
+
+    Notes:
+        - Requires MLflow tracking server to be running
+        - Creates/uses experiment named "{dataset_name}_classification"
+        - Automatically registers model with version management
+    """
     # Load and preprocess data
-    X_train, X_test, y_train, y_test, scaler = load_and_preprocess_data(dataset_name, random_state=random_state)
+    X_train, X_test, y_train, y_test, scaler = load_and_preprocess_data(dataset_name, random_state=random_state)  # noqa: N806
 
     # Set up MLflow
     mlflow.set_experiment(f"{dataset_name}_classification")
-    with mlflow.start_run(run_name=f"{dataset_name}_logreg") as run:
+    with mlflow.start_run(run_name=f"{dataset_name}_logreg"):
         # Initialize and train model
         model = LogisticRegression(C=C, penalty=penalty, random_state=random_state, max_iter=1000)
         model.fit(X_train, y_train)
@@ -80,7 +125,7 @@ def train_model(dataset_name='iris', C=1.0, penalty='l2', random_state=42):
             artifact_path="model",
             registered_model_name="ClassificationModel"
         )
-        
+
         # Add model description and tags
         client = mlflow.tracking.MlflowClient()
         model_version = model_info.registered_model_version
@@ -108,6 +153,3 @@ def train_model(dataset_name='iris', C=1.0, penalty='l2', random_state=42):
             value=f"{f1:.4f}"
         )
 
-if __name__ == "__main__":
-    mlflow.set_tracking_uri("http://host.docker.internal:5000")
-    train_model(dataset_name='iris')
