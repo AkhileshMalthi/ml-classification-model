@@ -15,6 +15,9 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy application code
 COPY src/ ./src/
+COPY tests/ ./tests/
+COPY run_experiments.py .
+COPY promote_model.py .
 
 # Expose port
 EXPOSE 8000
